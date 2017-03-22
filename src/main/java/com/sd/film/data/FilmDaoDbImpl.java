@@ -29,8 +29,8 @@ public class FilmDaoDbImpl implements FilmDao {
 		Film film = null;
 
 		String sqlToGetFilmTitleAndDescription = "select title, description from film where id = ?";
-		String sqlToGetActorsNames = "select actor.first_name, actor.last_name "
-				+ "from film_actor, actor " + "	where film_actor.actor_id = actor.id and film_actor.film_id = ?";
+		String sqlToGetActorsNames = "SELECT actor.first_name, actor.last_name " + "FROM film_actor JOIN actor "
+				+ "	ON film_actor.actor_id = actor.id WHERE film_actor.film_id = ?";
 		try {
 			Connection connection = DriverManager.getConnection(url, user, password);
 			PreparedStatement statementToGetFilmTitleAndDescription = connection
@@ -41,22 +41,22 @@ public class FilmDaoDbImpl implements FilmDao {
 				film = new Film();
 				film.setTitle(resultSetForFilm.getString(1));
 				film.setDescription(resultSetForFilm.getString(2));
-			}
-			PreparedStatement statementToGetActorsNames = connection
-					.prepareStatement(sqlToGetActorsNames);
-			statementToGetActorsNames.setInt(1, id);
-			ResultSet resultSetForActors = statementToGetActorsNames.executeQuery();
-			List<Actor> actors = new ArrayList<>();
-			while (resultSetForActors.next()) {
-				Actor actor = new Actor();				
-				actor.setFirstName(resultSetForActors.getString(1));
-				actor.setLastName(resultSetForActors.getString(2));
-				actors.add(actor);
-			}
-			film.setActors(actors);
 
-			resultSetForActors.close();
-			statementToGetActorsNames.close();
+				PreparedStatement statementToGetActorsNames = connection.prepareStatement(sqlToGetActorsNames);
+				statementToGetActorsNames.setInt(1, id);
+				ResultSet resultSetForActors = statementToGetActorsNames.executeQuery();
+				List<Actor> actors = new ArrayList<>();
+				while (resultSetForActors.next()) {
+					Actor actor = new Actor();
+					actor.setFirstName(resultSetForActors.getString(1));
+					actor.setLastName(resultSetForActors.getString(2));
+					actors.add(actor);
+				}
+				film.setActors(actors);
+
+				resultSetForActors.close();
+				statementToGetActorsNames.close();
+			}
 			resultSetForFilm.close();
 			statementToGetFilmTitleAndDescription.close();
 			connection.close();
