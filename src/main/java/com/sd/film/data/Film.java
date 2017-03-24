@@ -1,5 +1,6 @@
 package com.sd.film.data;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -15,7 +16,7 @@ public class Film {
 	private double replacementCost;
 	private Rating rating;
 	private Set<SpecialFeatures> specialFeatures;
-	private List<Actor> actors;
+	private List<Actor> cast;
 	
 	
 	public Film() {
@@ -121,6 +122,9 @@ public class Film {
 	public void setRating(Rating rating) {
 		this.rating = rating;
 	}
+	public void setRating(String rating) {
+		this.rating = Rating.valueOf(rating);
+	}
 
 
 	public Set<SpecialFeatures> getSpecialFeatures() {
@@ -133,14 +137,17 @@ public class Film {
 	}
 
 
-	public List<Actor> getActors() {
-		return actors;
+	public List<Actor> getCast() {
+		return new ArrayList<>(cast);
 	}
 
 
-	public void setActors(List<Actor> actors) {
-		this.actors = actors;
+	public void setCast(List<Actor> cast) {
+		this.cast = cast;
 	}
+
+
+	
 	
 	
 }

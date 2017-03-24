@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,8 +28,7 @@ public class FilmDaoDbImpl implements FilmDao {
 		Film film = null;
 
 		String sqlToGetFilmTitleAndDescription = "select title, description from film where id = ?";
-		String sqlToGetActorsNames = "SELECT actor.first_name, actor.last_name " + "FROM film_actor JOIN actor "
-				+ "	ON film_actor.actor_id = actor.id WHERE film_actor.film_id = ?";
+
 		try {
 			Connection connection = DriverManager.getConnection(url, user, password);
 			PreparedStatement statementToGetFilmTitleAndDescription = connection
@@ -39,23 +37,11 @@ public class FilmDaoDbImpl implements FilmDao {
 			ResultSet resultSetForFilm = statementToGetFilmTitleAndDescription.executeQuery();
 			if (resultSetForFilm.next()) {
 				film = new Film();
+				film.setId(id);
 				film.setTitle(resultSetForFilm.getString(1));
 				film.setDescription(resultSetForFilm.getString(2));
 
-				PreparedStatement statementToGetActorsNames = connection.prepareStatement(sqlToGetActorsNames);
-				statementToGetActorsNames.setInt(1, id);
-				ResultSet resultSetForActors = statementToGetActorsNames.executeQuery();
-				List<Actor> actors = new ArrayList<>();
-				while (resultSetForActors.next()) {
-					Actor actor = new Actor();
-					actor.setFirstName(resultSetForActors.getString(1));
-					actor.setLastName(resultSetForActors.getString(2));
-					actors.add(actor);
-				}
-				film.setActors(actors);
-
-				resultSetForActors.close();
-				statementToGetActorsNames.close();
+				film.setCast(getCast(id));
 			}
 			resultSetForFilm.close();
 			statementToGetFilmTitleAndDescription.close();
@@ -67,11 +53,37 @@ public class FilmDaoDbImpl implements FilmDao {
 		return film;
 	}
 
+	public List<Actor> getCast(Integer id) {
+		List<Actor> cast = null;
+		String sqlToGetCast = "SELECT actor.first_name, actor.last_name " + "FROM film_actor JOIN actor "
+				+ "	ON film_actor.actor_id = actor.id WHERE film_actor.film_id = ?";
+		try {
+			Connection connection = DriverManager.getConnection(url, user, password);
+			PreparedStatement statementToGetCast = connection.prepareStatement(sqlToGetCast);
+			statementToGetCast.setInt(1, id);
+			ResultSet resultSetForCast = statementToGetCast.executeQuery();
+			cast = new ArrayList<>();
+			while (resultSetForCast.next()) {
+				Actor actor = new Actor();
+				actor.setFirstName(resultSetForCast.getString(1));
+				actor.setLastName(resultSetForCast.getString(2));
+				cast.add(actor);
+			}
+			resultSetForCast.close();
+			statementToGetCast.close();
+			connection.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return cast;
+	}
+
 	@Override
 	public List<Film> getFilmsByTitle(String keyword) {
-		List<Film> results = new ArrayList();
+		List<Film> results = new ArrayList<>();
 
-		String sql = "select title, description from film where title LIKE ?";
+		String sql = "select id, title, description from film where title LIKE ?";
 		try {
 			Connection connection = DriverManager.getConnection(url, user, password);
 			PreparedStatement statement = connection.prepareStatement(sql);
@@ -80,11 +92,14 @@ public class FilmDaoDbImpl implements FilmDao {
 			ResultSet resultSet = statement.executeQuery();
 
 			while (resultSet.next()) {
-				String title = resultSet.getString(1);
-				String description = resultSet.getString(2);
+				int id = resultSet.getInt(1);
+				String title = resultSet.getString(2);
+				String description = resultSet.getString(3);
 				Film film = new Film();
+				film.setId(id);
 				film.setTitle(title);
 				film.setDescription(description);
+				film.setCast(getCast(id));
 				results.add(film);
 			}
 			resultSet.close();
@@ -97,4 +112,111 @@ public class FilmDaoDbImpl implements FilmDao {
 		return results;
 	}
 
+	@Override
+	public Film addFilm(Film filmToAdd) {
+		Film film = null;
+		String sql = "INSERT INTO film (title, description, release_year"
+				+ ", language_id, rental_duration, rental_rate, length, replacement_cost)"
+				+ " VALUES(?, ?, ?, 1, ?, ?, ?, ?)";
+		try {
+			Connection connection = DriverManager.getConnection(url, user, password);
+			PreparedStatement statement = connection.prepareStatement(sql);
+			statement.setString(1, filmToAdd.getTitle());
+			statement.setString(2, filmToAdd.getDescription());
+			statement.setInt(3, filmToAdd.getReleaseYear());
+			statement.setInt(4, filmToAdd.getRentalDuration());
+			statement.setDouble(5, filmToAdd.getRentalRate());
+			statement.setInt(6, filmToAdd.getLength());
+			statement.setDouble(7, filmToAdd.getReplacementCost());
+
+			statement.execute();
+			String sqlToGetLastInsertId = "SELECT last_insert_id()";
+
+			statement = connection.prepareStatement(sqlToGetLastInsertId);
+			ResultSet result = statement.executeQuery();
+			film = filmToAdd;
+			if (result.next()) {
+				film.setId(result.getInt(1));
+
+			}
+			result.close();
+			statement.close();
+			connection.close();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return film;
+	}
+
+	@Override
+	public boolean deleteFilm(Integer id) {
+		
+		String sqlDeleteFromFilm = "DELETE from film where id = ?";
+		Connection connection = null;
+		PreparedStatement statementToDelete = null;
+		try {
+			connection = DriverManager.getConnection(url, user, password);
+			connection.setAutoCommit(false);
+			
+			statementToDelete = connection.prepareStatement(sqlDeleteFromFilm);
+			statementToDelete.setInt(1, id);
+			int rowsAffected = statementToDelete.executeUpdate();
+			connection.commit();
+			statementToDelete.close();
+			connection.close();
+			if (rowsAffected == 1) {					
+				return true;
+			} else {
+				return false;
+			}
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} finally {
+			
+		}
+
+	}
+
+	
+	@Override
+	public Film updateFilm(Film film) {
+		String sql = "UPDATE film SET title = ?, description = ?, release_year = ?"
+				+ ", rental_duration = ?, rental_rate = ?, length = ?, replacement_cost = ?"
+				+ " WHERE id = ?";
+		try {
+			Connection connection = DriverManager.getConnection(url, user, password);
+			PreparedStatement statement = connection.prepareStatement(sql);
+			statement.setString(1, film.getTitle());
+			statement.setString(2, film.getDescription());
+			statement.setInt(3, film.getReleaseYear());
+			statement.setInt(4, film.getRentalDuration());
+			statement.setDouble(5, film.getRentalRate());
+			statement.setInt(6, film.getLength());
+			statement.setDouble(7, film.getReplacementCost());
+			statement.setInt(7, film.getId());
+
+			int numRowsUpdated = statement.executeUpdate();
+			statement.close();
+			connection.close();
+			
+			if (numRowsUpdated == 1) {
+				return film;
+			} else {
+				return null;
+			}
+			
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	
 }

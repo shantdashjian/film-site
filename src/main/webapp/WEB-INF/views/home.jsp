@@ -10,6 +10,9 @@
 <body>
 	<h1>Welcome to Java Movie Data Base (JMDB)</h1>
 	<div>
+		<a href="addFilm.do">Add New Film</a>
+	</div>
+	<div>
 		<form action="getTitle.do" method="GET">
 			<input type="text" name="id" value="${id}"> <input type="submit"
 				value="Get Film by ID">
@@ -29,7 +32,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<c:forEach var="actor" items="${film.actors}">
+						<c:forEach var="actor" items="${film.cast}">
 							<tr>
 								<td>${actor.firstName}</td>
 								<td>${actor.lastName}</td>
@@ -57,13 +60,23 @@
 						<tr>
 							<th>Title</th>
 							<th>Description</th>
+							<th>Cast</th>
+							
 						</tr>
 					</thead>
 					<tbody>
-						<c:forEach var="result" items="${searchResults}">
+						<c:forEach var="film" items="${searchResults}">
 							<tr>
-								<td>${result.title}</td>
-								<td>${result.description}</td>
+								<td>${film.title}</td>
+								<td>${film.description}</td>
+								<td>
+									<c:forEach var="actor" items="${film.cast}">
+										${actor.firstName} ${actor.lastName}<br>
+									</c:forEach>
+								</td>
+								<td>
+								<a href="deleteFilm.do?id=${film.id}">Delete Film ${film.id}</a><br>
+								<a href="editFilm.do?id=${film.id}">Edit Film ${film.id}</a>
 							</tr>
 						</c:forEach>
 					</tbody>
